@@ -1,3 +1,5 @@
+# Bản .vsix chỉ đưa lên git trong dist/ (bản cài sẵn cho người dùng tải)
 *.vsix
+!dist/*.vsix
 node_modules/
 .DS_Store

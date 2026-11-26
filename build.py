@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Đóng gói claude-usage-bar-<version>.vsix (không cần vsce) rồi cài: antigravity-ide --install-extension <file>."""
+"""Đóng gói dist/claude-usage-bar-<version>.vsix (chỉ cần Python 3, không cần Node/vsce).
+Cài: antigravity-ide --install-extension dist/claude-usage-bar-<version>.vsix"""
 import json, zipfile, pathlib
 here = pathlib.Path(__file__).parent
 pkg = json.loads((here / 'package.json').read_text())
-out = here / f"{pkg['name']}-{pkg['version']}.vsix"
+(here / 'dist').mkdir(exist_ok=True)
+out = here / 'dist' / f"{pkg['name']}-{pkg['version']}.vsix"
 manifest = f'''<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>

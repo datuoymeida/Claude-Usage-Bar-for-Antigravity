@@ -28,17 +28,28 @@ dùng — cùng số với bảng **Account & Usage** — và cho chuyển giữ
 
 Chỉ dùng cho các tài khoản của chính mình — Claude Code dành cho người mua gói, dùng cá nhân.
 
-## Cài trên máy khác
-Chép file `claude-usage-bar-<version>.vsix` sang máy đó, rồi một trong hai cách:
-- Trong Antigravity / VS Code / Cursor: tab Extensions → `···` → **Install from VSIX…** → chọn file.
-- Dòng lệnh: `antigravity-ide --install-extension claude-usage-bar-<version>.vsix`
-  (VS Code: `code --install-extension …`, Cursor: `cursor --install-extension …`).
+## Cài đặt
+Chọn một trong hai cách để có file `.vsix`:
 
-Sau đó Developer: Reload Window. Máy đó cần có Claude Code (CLI hoặc extension Claude Code). Tài khoản
+1. **Tải bản dựng sẵn**: [dist/claude-usage-bar-0.2.1.vsix](dist/claude-usage-bar-0.2.1.vsix)
+   (mở link → nút **Download raw file**).
+2. **Tự build từ mã nguồn** (chỉ cần Python 3, không cần Node/npm):
+   ```bash
+   git clone https://github.com/datuoymeida/Claude-Usage-Bar-for-Antigravity.git
+   cd Claude-Usage-Bar-for-Antigravity
+   python3 build.py        # → dist/claude-usage-bar-<version>.vsix
+   ```
+
+Rồi cài file đó:
+- Trong Antigravity / VS Code / Cursor: tab Extensions → `···` → **Install from VSIX…** → chọn file.
+- Hoặc dòng lệnh: `antigravity-ide --install-extension dist/claude-usage-bar-<version>.vsix`
+  (VS Code: `code --install-extension …`, Cursor: `cursor --install-extension …`; trên macOS lệnh
+  `antigravity-ide` nằm ở `/Applications/Antigravity IDE.app/Contents/Resources/app/bin/`).
+
+Sau đó **Developer: Reload Window**. Máy đó cần có Claude Code (CLI hoặc extension Claude Code). Tài khoản
 **không** đi theo file — mỗi máy đăng nhập lại bằng "Thêm tài khoản…". Windows: thư mục dùng chung bằng
 junction; `CLAUDE.md` / `settings.json` chỉ dùng chung khi bật Developer Mode.
 
-## Build / cài
-`python3 build.py` rồi
-`"/Applications/Antigravity IDE.app/Contents/Resources/app/bin/antigravity-ide" --install-extension claude-usage-bar-<version>.vsix`
-và Developer: Reload Window.
+## Phát hành bản mới
+Sửa mã → tăng `version` trong `package.json` → `python3 build.py` → xoá bản `.vsix` cũ trong `dist/`, sửa
+link ở mục Cài đặt → commit cả mã lẫn file `.vsix` mới.
