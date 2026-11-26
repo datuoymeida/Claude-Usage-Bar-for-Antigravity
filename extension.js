@@ -447,23 +447,35 @@ async function showAccounts() {
 
 // --- Hiển thị -----------------------------------------------------------------
 
-/** Danh sách hạn mức: ưu tiên `limits` (như bảng Account & Usage), không có thì đọc rate_limits. */
+/**
+ * Danh sách hạn mức: ưu tiên `limits` (như bảng Account & Usage), không có thì đọc five_hour/seven_day.
+ * Hạn mức theo model (ví dụ Fable) có thể chỉ nằm trong `model_scoped` (tài khoản không có `limits`),
+ * nên luôn bổ sung từ đó những mục chưa có.
+ */
 function limitsOf(data) {
+  const out = [];
   if (Array.isArray(data?.rate_limits?.limits)) {
-    return data.rate_limits.limits
-      .filter((l) => typeof l.percent === 'number')
-      .map((l) => ({
+    for (const l of data.rate_limits.limits) {
+      if (typeof l.percent !== 'number') continue;
+      out.push({
         label: labelOf(l),
         short: l.scope ? null : shortOf(l.group || l.kind),
         percent: l.percent,
         severity: l.severity,
         resetsAt: l.resets_at,
-      }));
+      });
+    }
+  } else {
+    for (const [key, short, label] of [['five_hour', '5h', '5 giờ'], ['seven_day', '7d', 'Tuần']]) {
+      const w = data?.rate_limits?.[key];
+      if (w && typeof w.utilization === 'number') out.push({ label, short, percent: w.utilization, resetsAt: w.resets_at });
+    }
   }
-  const out = [];
-  for (const [key, short, label] of [['five_hour', '5h', '5 giờ'], ['seven_day', '7d', 'Tuần']]) {
-    const w = data?.rate_limits?.[key];
-    if (w && typeof w.utilization === 'number') out.push({ label, short, percent: w.utilization, resetsAt: w.resets_at });
+  for (const m of data?.rate_limits?.model_scoped ?? []) {
+    if (!m?.display_name || typeof m.utilization !== 'number') continue;
+    const label = `Tuần — ${m.display_name}`;
+    if (out.some((l) => l.label === label)) continue;
+    out.push({ label, short: null, percent: m.utilization, resetsAt: m.resets_at });
   }
   return out;
 }
