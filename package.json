@@ -2,7 +2,7 @@
   "name": "claude-usage-bar",
   "displayName": "Claude Usage Bar",
   "description": "Hạn mức Claude Code trên thanh trạng thái, chuyển giữa nhiều tài khoản Claude Code.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "local",
   "license": "UNLICENSED",
   "private": true,
