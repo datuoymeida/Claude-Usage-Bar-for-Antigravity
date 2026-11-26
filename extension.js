@@ -552,13 +552,19 @@ function when(value) {
   return d.toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-/** Đếm ngược theo ngày tới lúc reset, ví dụ "còn 2 ngày", "còn 0 ngày" (dưới 24 giờ). */
+/** Đếm ngược tới lúc reset, ví dụ "còn 2 ngày 5 giờ", "còn 3 giờ 10 phút", "còn 45 phút". */
 function countdown(value) {
   const d = new Date(typeof value === 'number' ? value * 1000 : value);
   const ms = d.getTime() - Date.now();
   if (Number.isNaN(ms)) return '';
-  const days = Math.max(0, Math.floor(ms / 86400000));
-  return `còn ${days} ngày`;
+  if (ms <= 0) return 'đã đến lúc reset';
+  const mins = Math.ceil(ms / 60000);
+  const days = Math.floor(mins / 1440);
+  const hours = Math.floor((mins % 1440) / 60);
+  const minutes = mins % 60;
+  if (days > 0) return `còn ${days} ngày ${hours} giờ`;
+  if (hours > 0) return `còn ${hours} giờ ${minutes} phút`;
+  return `còn ${Math.max(1, minutes)} phút`;
 }
 
 const escape = (s) => String(s).replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
