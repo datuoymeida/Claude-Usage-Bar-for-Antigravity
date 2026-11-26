@@ -526,7 +526,7 @@ function render() {
     md.appendMarkdown(`${head}\n\n`);
     if (st?.status && !st.status.loggedIn) md.appendMarkdown('- chưa đăng nhập\n');
     for (const l of limitsOf(st?.usage)) {
-      md.appendMarkdown(`- ${escape(l.label)}: **${fmt(l.percent)}** ${bar(l.percent)}${l.resetsAt ? ` — reset ${when(l.resetsAt)}` : ''}\n`);
+      md.appendMarkdown(`- ${escape(l.label)}: **${fmt(l.percent)}** ${bar(l.percent)}${l.resetsAt ? ` — reset ${when(l.resetsAt)} (${countdown(l.resetsAt)})` : ''}\n`);
     }
     if (!st) md.appendMarkdown('- đang lấy…\n');
     if (st?.error) md.appendMarkdown(`- $(warning) ${escape(st.error)}\n`);
@@ -535,7 +535,7 @@ function render() {
   const at = Math.max(0, ...list.map((a) => state.get(a.id)?.at ?? 0));
   md.appendMarkdown(`Cập nhật ${at ? new Date(at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—'}`
     + ' · [Đổi tài khoản](command:claudeUsage.accounts) · [Thêm](command:claudeUsage.addAccount)'
-    + ' · [Làm mới](command:claudeUsage.refresh) · [Mở Claude](command:claude-vscode.focus)');
+    + ' · [Làm mới](command:claudeUsage.refresh) · [Mở chat Claude Code](command:claude-vscode.focus)');
   item.tooltip = md;
 }
 
@@ -550,6 +550,15 @@ function when(value) {
   const d = new Date(typeof value === 'number' ? value * 1000 : value);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+/** Đếm ngược theo ngày tới lúc reset, ví dụ "còn 2 ngày", "còn 0 ngày" (dưới 24 giờ). */
+function countdown(value) {
+  const d = new Date(typeof value === 'number' ? value * 1000 : value);
+  const ms = d.getTime() - Date.now();
+  if (Number.isNaN(ms)) return '';
+  const days = Math.max(0, Math.floor(ms / 86400000));
+  return `còn ${days} ngày`;
 }
 
 const escape = (s) => String(s).replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
