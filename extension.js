@@ -526,7 +526,7 @@ function render() {
     md.appendMarkdown(`${head}\n\n`);
     if (st?.status && !st.status.loggedIn) md.appendMarkdown('- chưa đăng nhập\n');
     for (const l of limitsOf(st?.usage)) {
-      md.appendMarkdown(`- ${escape(l.label)}: **${fmt(l.percent)}** ${bar(l.percent)}${l.resetsAt ? ` — reset ${when(l.resetsAt)} (${countdown(l.resetsAt)})` : ''}\n`);
+      md.appendMarkdown(`- ${escape(l.label)}: ${usageDot(l.percent)} **${fmt(l.percent)}** ${bar(l.percent)}${l.resetsAt ? ` — reset ${when(l.resetsAt)} (${resetDot(l.resetsAt)} ${countdown(l.resetsAt)})` : ''}\n`);
     }
     if (!st) md.appendMarkdown('- đang lấy…\n');
     if (st?.error) md.appendMarkdown(`- $(warning) ${escape(st.error)}\n`);
@@ -540,6 +540,17 @@ function render() {
 }
 
 const fmt = (p) => `${Math.round(p)}%`;
+
+/** Chấm màu theo mức đã dùng: xanh dưới 80%, vàng từ 80%, đỏ từ 95%. */
+const usageDot = (p) => (p >= 95 ? '🔴' : p >= 80 ? '🟡' : '🟢');
+
+/** Chấm màu theo thời gian còn lại tới reset: xanh dưới 1 ngày, vàng 1–3 ngày, đỏ trên 3 ngày. */
+function resetDot(value) {
+  const d = new Date(typeof value === 'number' ? value * 1000 : value);
+  const ms = d.getTime() - Date.now();
+  if (Number.isNaN(ms) || ms < 86400000) return '🟢';
+  return ms <= 3 * 86400000 ? '🟡' : '🔴';
+}
 
 function bar(p) {
   const n = Math.max(0, Math.min(10, Math.round(p / 10)));
