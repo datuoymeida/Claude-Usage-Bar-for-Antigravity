@@ -1,0 +1,60 @@
+{
+  "name": "claude-usage-bar",
+  "displayName": "Claude Usage Bar",
+  "description": "Hạn mức Claude Code trên thanh trạng thái, chuyển giữa nhiều tài khoản Claude Code.",
+  "version": "0.2.1",
+  "publisher": "local",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeUsage.accounts",
+        "title": "Claude Usage: Danh sách / đổi tài khoản"
+      },
+      {
+        "command": "claudeUsage.addAccount",
+        "title": "Claude Usage: Thêm tài khoản"
+      },
+      {
+        "command": "claudeUsage.removeAccount",
+        "title": "Claude Usage: Gỡ tài khoản"
+      },
+      {
+        "command": "claudeUsage.refresh",
+        "title": "Claude Usage: Làm mới hạn mức"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Usage Bar",
+      "properties": {
+        "claudeUsage.refreshMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Bao nhiêu phút làm mới một lần."
+        },
+        "claudeUsage.claudePath": {
+          "type": "string",
+          "default": "",
+          "description": "Đường dẫn lệnh claude (để trống: tự tìm ~/.local/bin/claude, Homebrew, hoặc bản đi kèm extension Claude Code)."
+        },
+        "claudeUsage.switchTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Khi đổi tài khoản, đặt luôn CLAUDE_CONFIG_DIR cho terminal tích hợp (terminal mở sau đó gõ `claude` sẽ dùng cùng tài khoản)."
+        }
+      }
+    }
+  }
+}
