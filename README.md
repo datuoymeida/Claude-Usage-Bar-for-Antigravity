@@ -9,7 +9,11 @@ dùng — cùng số với bảng **Account & Usage** — và cho chuyển giữ
 - **Thêm tài khoản…**: đặt tên gợi nhớ → terminal chạy `claude auth login` mở trình duyệt. Trình duyệt đang
   đăng nhập claude.ai bằng tài khoản khác thì đổi tài khoản trên claude.ai trước (hoặc cửa sổ ẩn danh:
   bấm `c` trong terminal để chép link).
+- **Đổi tên**: mục "Đổi tên tài khoản…" trong danh sách, hoặc lệnh *Claude Usage: Đổi tên tài khoản*. Tên
+  để trống thì dùng lại email. Đổi tên không ảnh hưởng tới đăng nhập.
 - **Rê chuột**: hạn mức của mọi tài khoản. Từ 80% ô vàng, từ 95% ô đỏ. Tự làm mới mỗi 5 phút.
+- **Đổi vị trí ô**: cài đặt `claudeUsage.priority` (mặc định 1000; `-1` để sát chuông thông báo, `100000` để
+  lên trước các ô khác). Đổi xong ô được tạo lại ngay, không cần Reload Window.
 - Sau khi chuyển: phiên chat đang mở vẫn dùng tài khoản cũ → bấm **Tải lại cửa sổ** khi được hỏi.
 
 ## Cách hoạt động

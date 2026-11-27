@@ -2,7 +2,7 @@
   "name": "claude-usage-bar",
   "displayName": "Claude Usage Bar",
   "description": "Hạn mức Claude Code trên thanh trạng thái, chuyển giữa nhiều tài khoản Claude Code.",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "publisher": "local",
   "license": "UNLICENSED",
   "private": true,
@@ -31,6 +31,10 @@
         "title": "Claude Usage: Gỡ tài khoản"
       },
       {
+        "command": "claudeUsage.renameAccount",
+        "title": "Claude Usage: Đổi tên tài khoản"
+      },
+      {
         "command": "claudeUsage.refresh",
         "title": "Claude Usage: Làm mới hạn mức"
       }
@@ -53,6 +57,11 @@
           "type": "boolean",
           "default": true,
           "description": "Khi đổi tài khoản, đặt luôn CLAUDE_CONFIG_DIR cho terminal tích hợp (terminal mở sau đó gõ `claude` sẽ dùng cùng tài khoản)."
+        },
+        "claudeUsage.priority": {
+          "type": "number",
+          "default": 1000,
+          "description": "Thứ tự ô trên thanh trạng thái: số lớn hơn nằm xa bên trái hơn. Mặc định 1000. Muốn sát chuông thông báo đặt -1 (ô ✻ Claude Code của Antigravity dùng mức 0); muốn lên trước mọi ô khác đặt 100000. Đổi xong ô được tạo lại ngay."
         }
       }
     }

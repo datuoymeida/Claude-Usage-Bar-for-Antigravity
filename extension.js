@@ -35,22 +35,42 @@ const baseDir = () => process.env.CLAUDE_USAGE_ACCOUNTS_DIR || path.join(home(),
 const defaultDir = () => path.join(home(), '.claude');
 const config = () => vscode.workspace.getConfiguration('claudeUsage');
 
+// Thứ tự trên thanh trạng thái: priority càng lớn ô càng nằm xa bên trái (trong nhóm bên phải).
+// VS Code chỉ xét priority lúc tạo ô, nên đổi cài đặt thì ô được tạo lại (không cần Reload Window).
+const DEFAULT_PRIORITY = 1000;
+
+function createItem() {
+  const configured = Number(config().get('priority'));
+  const created = vscode.window.createStatusBarItem(
+    'claudeUsage.bar',
+    vscode.StatusBarAlignment.Right,
+    Number.isFinite(configured) ? configured : DEFAULT_PRIORITY,
+  );
+  created.name = 'Claude Usage';
+  created.command = 'claudeUsage.accounts';
+  created.text = '$(sync~spin) Claude';
+  created.tooltip = 'Đang lấy hạn mức Claude Code…';
+  created.show();
+  return created;
+}
+
 function activate(context) {
-  item = vscode.window.createStatusBarItem('claudeUsage.bar', vscode.StatusBarAlignment.Right, 1000);
-  item.name = 'Claude Usage';
-  item.command = 'claudeUsage.accounts';
-  item.text = '$(sync~spin) Claude';
-  item.tooltip = 'Đang lấy hạn mức Claude Code…';
-  item.show();
+  item = createItem();
 
   context.subscriptions.push(
-    item,
+    { dispose: () => item?.dispose() },
     vscode.commands.registerCommand('claudeUsage.accounts', showAccounts),
     vscode.commands.registerCommand('claudeUsage.refresh', () => refresh(true)),
     vscode.commands.registerCommand('claudeUsage.addAccount', addAccount),
     vscode.commands.registerCommand('claudeUsage.switchAccount', (id) => (id ? switchTo(findAccount(id)) : showAccounts())),
     vscode.commands.registerCommand('claudeUsage.removeAccount', removeAccount),
+    vscode.commands.registerCommand('claudeUsage.renameAccount', (id) => renameFlow(typeof id === 'string' ? id : null)),
     vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('claudeUsage.priority')) {
+        item?.dispose();
+        item = createItem();
+        render();
+      }
       if (e.affectsConfiguration('claudeUsage.refreshMinutes')) schedule();
       if (e.affectsConfiguration('claudeCode.environmentVariables')) render();
     }),
@@ -76,25 +96,41 @@ function registryPath() {
   return path.join(baseDir(), 'accounts.json');
 }
 
-function readRegistry() {
+/** Toàn bộ sổ, kể cả các khoá ngoài danh sách tài khoản (như defaultLabel). */
+function readRegistryFile() {
   try {
     const data = JSON.parse(fs.readFileSync(registryPath(), 'utf8'));
-    return Array.isArray(data.accounts) ? data.accounts.filter((a) => a && a.id && a.dir) : [];
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
   } catch {
-    return [];
+    return {};
   }
 }
 
-function writeRegistry(list) {
+function readRegistry() {
+  const data = readRegistryFile();
+  return Array.isArray(data.accounts) ? data.accounts.filter((a) => a && a.id && a.dir) : [];
+}
+
+/** Ghi lại cả sổ. */
+function writeRegistryData(data) {
   fs.mkdirSync(baseDir(), { recursive: true });
   const tmp = `${registryPath()}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, `${JSON.stringify({ accounts: list.map(({ id, label, dir }) => ({ id, label, dir })) }, null, 2)}\n`);
+  fs.writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`);
   fs.renameSync(tmp, registryPath());
 }
 
-/** Mặc định (~/.claude) + các tài khoản đã thêm. */
+/** Đổi danh sách tài khoản nhưng giữ nguyên các khoá khác (tên của tài khoản mặc định…). */
+function writeRegistry(list) {
+  writeRegistryData({
+    ...readRegistryFile(),
+    accounts: list.map(({ id, label, dir }) => ({ id, label, dir })),
+  });
+}
+
+/** Mặc định (~/.claude) + các tài khoản đã thêm. Tên của mặc định lưu ở `defaultLabel` trong sổ. */
 function accounts() {
-  return [{ id: 'default', label: '', dir: null }, ...readRegistry()];
+  const name = readRegistryFile().defaultLabel;
+  return [{ id: 'default', label: typeof name === 'string' ? name : '', dir: null }, ...readRegistry()];
 }
 
 function findAccount(id) {
@@ -397,6 +433,67 @@ async function removeAccount() {
   vscode.window.showInformationMessage(`Đã gỡ "${pick.label}". Thư mục ${pick.acc.dir} vẫn giữ lại — xoá tay nếu không cần.`);
 }
 
+const MAX_NAME_LENGTH = 40;
+
+/**
+ * Đổi tên hiển thị. Để trống = quay về tên mặc định (email). Tài khoản mặc định lưu tên ở `defaultLabel`
+ * trong sổ; tài khoản đã thêm đổi nhãn. Không đổi id hay thư mục nên không ảnh hưởng tới đăng nhập.
+ */
+async function renameAccount(acc) {
+  if (acc.custom) {
+    vscode.window.showInformationMessage('Tài khoản này không nằm trong danh sách đã thêm nên không đổi tên được.');
+    return;
+  }
+  const taken = accounts().filter((a) => a.id !== acc.id).map((a) => displayName(a).toLowerCase());
+  const input = await vscode.window.showInputBox({
+    title: 'Đổi tên tài khoản Claude Code',
+    prompt: `Tên hiển thị trong danh sách và thanh trạng thái (tối đa ${MAX_NAME_LENGTH} ký tự). Để trống để dùng email.`,
+    value: acc.label || '',
+    placeHolder: displayName(acc),
+    validateInput: (v) => {
+      const t = String(v).trim();
+      if (t.length > MAX_NAME_LENGTH) return `Tối đa ${MAX_NAME_LENGTH} ký tự`;
+      if (/[\r\n]/.test(t)) return 'Không xuống dòng';
+      if (t && taken.includes(t.toLowerCase())) return 'Tên này đã có tài khoản khác dùng';
+      return null;
+    },
+  });
+  if (input === undefined) return; // bấm Esc
+  const name = input.trim();
+
+  const data = readRegistryFile();
+  if (acc.id === 'default') {
+    if (name) data.defaultLabel = name;
+    else delete data.defaultLabel;
+  } else {
+    const list = readRegistry();
+    const hit = list.find((a) => a.id === acc.id);
+    if (!hit) {
+      vscode.window.showErrorMessage(`Không tìm thấy "${displayName(acc)}" trong sổ tài khoản.`);
+      return;
+    }
+    hit.label = name;
+    data.accounts = list.map(({ id, label, dir }) => ({ id, label, dir }));
+  }
+  writeRegistryData(data);
+  render();
+  vscode.window.showInformationMessage(`Đã đổi tên thành "${displayName(findAccount(acc.id) ?? acc)}".`);
+}
+
+/** Đổi tên: nếu chưa biết tài khoản nào thì hỏi chọn trước. */
+async function renameFlow(id = null) {
+  let acc = id ? findAccount(id) : null;
+  if (!acc) {
+    const pick = await vscode.window.showQuickPick(
+      accounts().map((a) => ({ label: displayName(a), description: state.get(a.id)?.status?.email ?? '', acc: a })),
+      { title: 'Đổi tên tài khoản Claude Code' },
+    );
+    if (!pick) return;
+    acc = pick.acc;
+  }
+  await renameAccount(acc);
+}
+
 async function showAccounts() {
   const active = activeAccount();
   const list = accounts();
@@ -418,6 +515,7 @@ async function showAccounts() {
         };
       }),
       { label: '', kind: vscode.QuickPickItemKind.Separator },
+      { label: '$(edit) Đổi tên tài khoản…', action: 'rename' },
       { label: '$(add) Thêm tài khoản…', action: 'add' },
       { label: '$(sync) Làm mới hạn mức', action: 'refresh' },
       ...(readRegistry().length ? [{ label: '$(trash) Gỡ tài khoản…', action: 'remove' }] : []),
@@ -435,6 +533,7 @@ async function showAccounts() {
     qp.hide();
     if (sel.action === 'add') addAccount();
     else if (sel.action === 'remove') removeAccount();
+    else if (sel.action === 'rename') renameFlow();
     else if (sel.acc) {
       const s = state.get(sel.acc.id);
       if (s && s.status && !s.status.loggedIn) openLogin(sel.acc);
@@ -596,4 +695,4 @@ function deactivate() {
   clearInterval(timer);
 }
 
-module.exports = { activate, deactivate, limitsOf, render, prepareDir, switchTo, activeAccount, accounts, slugify, state };
+module.exports = { activate, deactivate, limitsOf, render, prepareDir, switchTo, activeAccount, accounts, slugify, state, renameAccount, writeRegistry, readRegistryFile };
